@@ -1,0 +1,148 @@
+// =============================================================================
+// prisma/schema.prisma  -  Modelo de dados do ACHADOS IFRS
+// =============================================================================
+// Relacionamentos:
+//   1:1  usuarios     <-> perfis        (dados de contato do usuario)
+//   1:1  objetos      <-> retiradas     (um objeto so e retirado/devolvido uma vez)
+//   1:N  categorias   -> objetos
+//   1:N  localizacoes -> objetos
+//   1:N  usuarios     -> objetos        (quem registrou)
+//   1:N  usuarios     -> retiradas      (responsavel pela entrega)
+//   1:N  objetos      -> fotos
+//   1:N  localizacoes -> localizacoes   (hierarquia: campus > predio > andar > sala)
+//   N:N  objetos      <-> tags          (caracteristicas: "preto", "capinha"...)
+// =============================================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---- Enums ------------------------------------------------------------------
+enum Papel {
+  USUARIO // usuario comum: cadastra objetos perdidos e consulta
+  RESPONSAVEL // setor de achados e perdidos: cadastra encontrados e registra retiradas
+  ADMINISTRADOR // tudo isso + gestao de usuarios e papeis
+}
+
+enum StatusObjeto {
+  PERDIDO
+  ENCONTRADO
+  DEVOLVIDO
+}
+
+enum TipoLocalizacao {
+  CAMPUS
+  PREDIO
+  ANDAR
+  SALA
+}
+
+// ---- Usuarios e perfis (1:1) ------------------------------------------------
+model Usuario {
+  id    Int    @id @default(autoincrement())
+  nome  String
+  email String @unique
+  senha String // hash do bcrypt, nunca a senha pura
+  papel Papel  @default(USUARIO)
+
+  perfil             Perfil? // 1:1
+  objetosRegistrados Objeto[] // 1:N
+  retiradasEntregues Retirada[] // 1:N (como responsavel pela entrega)
+
+  @@map("usuarios")
+}
+
+model Perfil {
+  id        Int     @id @default(autoincrement())
+  telefone  String?
+  matricula String? // matricula ou SIAPE
+  usuarioId Int     @unique // o @unique transforma o 1:N em 1:1
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("perfis")
+}
+
+// ---- Localizacoes (hierarquia por auto-relacionamento) ----------------------
+model Localizacao {
+  id      Int             @id @default(autoincrement())
+  nome    String
+  tipo    TipoLocalizacao
+  paiId   Int?
+  pai     Localizacao?    @relation("Hierarquia", fields: [paiId], references: [id])
+  filhos  Localizacao[]   @relation("Hierarquia")
+  objetos Objeto[]
+
+  @@map("localizacoes")
+}
+
+// ---- Categorias e tags ------------------------------------------------------
+model Categoria {
+  id      Int      @id @default(autoincrement())
+  nome    String   @unique
+  objetos Objeto[]
+
+  @@map("categorias")
+}
+
+model Tag {
+  id      Int      @id @default(autoincrement())
+  nome    String   @unique
+  objetos Objeto[] // N:N implicita com Objeto
+
+  @@map("tags")
+}
+
+// ---- Objetos (perdidos e encontrados) ---------------------------------------
+model Objeto {
+  id             Int          @id @default(autoincrement())
+  tipo           String // o que e o objeto (ex.: "Garrafa termica", "Calculadora")
+  descricao      String
+  dataOcorrencia DateTime // data em que foi perdido / data de entrada no setor
+  contato        String? // obrigatorio para objetos perdidos
+  status         StatusObjeto
+  sensivel       Boolean      @default(false) // oculta as fotos nas consultas publicas
+  criadoEm       DateTime     @default(now())
+
+  categoriaId     Int
+  localizacaoId   Int
+  registradoPorId Int
+  categoria       Categoria   @relation(fields: [categoriaId], references: [id])
+  localizacao     Localizacao @relation(fields: [localizacaoId], references: [id])
+  registradoPor   Usuario     @relation(fields: [registradoPorId], references: [id])
+
+  tags     Tag[] // N:N
+  fotos    Foto[] // 1:N
+  retirada Retirada? // 1:1
+
+  @@map("objetos")
+}
+
+model Foto {
+  id       Int    @id @default(autoincrement())
+  url      String
+  objetoId Int
+  objeto   Objeto @relation(fields: [objetoId], references: [id], onDelete: Cascade)
+
+  @@map("fotos")
+}
+
+// ---- Retiradas (1:1 com objetos) --------------------------------------------
+model Retirada {
+  id                   Int      @id @default(autoincrement())
+  retiradoPorNome      String // quem retirou o objeto
+  retiradoPorDocumento String? // documento/matricula de quem retirou
+  dataRetirada         DateTime @default(now())
+
+  objetoId      Int     @unique // 1:1
+  responsavelId Int
+  objeto        Objeto  @relation(fields: [objetoId], references: [id])
+  responsavel   Usuario @relation(fields: [responsavelId], references: [id])
+
+  @@map("retiradas")
+}

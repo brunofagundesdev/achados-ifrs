@@ -1,0 +1,44 @@
+digraph G {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.35; ranksep=0.9; compound=true;
+  node [shape=component, fontname="Helvetica", fontsize=11, style=filled, fillcolor="#EAF2FB", color="#2F5D8C"];
+  edge [fontname="Helvetica", fontsize=9, color="#555555"];
+
+  cliente [label="Cliente HTTP\n(Insomnia / Postman / Frontend)", fillcolor="#FFF4D6", color="#B58900"];
+  disco [label="Pasta uploads/\n(disco do servidor)", shape=folder, fillcolor="#E6F4EA", color="#2E7D32"];
+  neon [label="PostgreSQL (Neon)", shape=cylinder, fillcolor="#E6F4EA", color="#2E7D32"];
+
+  subgraph cluster_api {
+    label="Achados IFRS API (NestJS)"; style=rounded; color="#2F5D8C"; fontname="Helvetica-Bold";
+    main [label="main.ts\nValidationPipe global + CORS", fillcolor="#F3F3F3", color="#777777"];
+
+    subgraph cluster_seg { label="Segurança"; style=dashed; color="#999999";
+      guard [label="AuthGuard (global)\n@Public() / @Roles()", fillcolor="#FDE7E7", color="#B23B3B"];
+      auth  [label="AuthModule\nregister / login / me", fillcolor="#FDE7E7", color="#B23B3B"];
+    }
+    subgraph cluster_dom { label="Módulos de domínio"; style=dashed; color="#999999";
+      usuarios [label="UsuariosModule"];
+      perfis [label="PerfisModule"];
+      categorias [label="CategoriasModule"];
+      tags [label="TagsModule"];
+      localizacoes [label="LocalizacoesModule\nhierarquia campus>sala"];
+      objetos [label="ObjetosModule\nperdidos / encontrados / busca / fotos"];
+      retiradas [label="RetiradasModule\nretirada + status DEVOLVIDO"];
+      relatorios [label="RelatoriosModule\nconsultas com 3+ tabelas"];
+      uploads [label="UploadsModule\nArmazenamentoService\n(grava fotos em disco)"];
+    }
+    prisma [label="PrismaModule (global)\nPrismaService", fillcolor="#E8F5E9", color="#2E7D32"];
+  }
+
+  cliente -> main [label="HTTP + JWT"];
+  main -> guard;
+  guard -> auth [lhead=cluster_seg, style=invis];
+  guard -> objetos [label="rotas protegidas", lhead=cluster_dom];
+  guard -> prisma [label="confere usuário/papel", style=dashed];
+  objetos -> localizacoes [label="idsComDescendentes()"];
+  objetos -> uploads [label="salvarImagens()"];
+  uploads -> disco [label="fs"];
+  main -> disco [label="estáticos /uploads", style=dashed];
+  auth -> prisma; usuarios -> prisma; perfis -> prisma; categorias -> prisma;
+  tags -> prisma; localizacoes -> prisma; objetos -> prisma; retiradas -> prisma; relatorios -> prisma;
+  prisma -> neon [label="Prisma 7 +\nadapter-neon"];
+}

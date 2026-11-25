@@ -1,0 +1,24 @@
+digraph ER {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.5; ranksep=1.0;
+  node [shape=plain, fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=9, color="#444444", arrowhead=none];
+
+  usuarios [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>usuarios</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">nome</td></tr><tr><td align="left">email (UK)</td></tr><tr><td align="left">senha</td></tr><tr><td align="left">papel (enum)</td></tr></table>>];
+  perfis [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>perfis</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">telefone</td></tr><tr><td align="left">matricula</td></tr><tr><td align="left">usuarioId (FK, UK)</td></tr></table>>];
+  localizacoes [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>localizacoes</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">nome</td></tr><tr><td align="left">tipo (enum)</td></tr><tr><td align="left">paiId (FK)</td></tr></table>>];
+  categorias [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>categorias</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">nome (UK)</td></tr></table>>];
+  tags [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>tags</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">nome (UK)</td></tr></table>>];
+  objetos [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#FFF4D6"><tr><td bgcolor="#B58900"><font color="white"><b>objetos</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">tipo</td></tr><tr><td align="left">descricao</td></tr><tr><td align="left">dataOcorrencia</td></tr><tr><td align="left">contato</td></tr><tr><td align="left">status (enum)</td></tr><tr><td align="left">sensivel</td></tr><tr><td align="left">categoriaId (FK)</td></tr><tr><td align="left">localizacaoId (FK)</td></tr><tr><td align="left">registradoPorId (FK)</td></tr></table>>];
+  fotos [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>fotos</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">url</td></tr><tr><td align="left">objetoId (FK)</td></tr></table>>];
+  retiradas [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#EAF2FB"><tr><td bgcolor="#2F5D8C"><font color="white"><b>retiradas</b></font></td></tr><tr><td align="left">id (PK)</td></tr><tr><td align="left">retiradoPorNome</td></tr><tr><td align="left">retiradoPorDocumento</td></tr><tr><td align="left">dataRetirada</td></tr><tr><td align="left">objetoId (FK, UK)</td></tr><tr><td align="left">responsavelId (FK)</td></tr></table>>];
+
+  usuarios -> perfis [taillabel="1", headlabel="0..1", label="1:1"];
+  usuarios -> objetos [taillabel="1", headlabel="N", label="1:N registra"];
+  usuarios -> retiradas [taillabel="1", headlabel="N", label="1:N entrega"];
+  categorias -> objetos [taillabel="1", headlabel="N", label="1:N"];
+  localizacoes -> objetos [taillabel="1", headlabel="N", label="1:N"];
+  localizacoes -> localizacoes [label="1:N (hierarquia)"];
+  objetos -> fotos [taillabel="1", headlabel="N", label="1:N"];
+  objetos -> retiradas [taillabel="1", headlabel="0..1", label="1:1"];
+  objetos -> tags [taillabel="N", headlabel="N", label="N:N"];
+}

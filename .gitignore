@@ -1,0 +1,16 @@
+/dist
+/node_modules
+/coverage
+*.tsbuildinfo
+*.log
+.DS_Store
+.idea
+.vscode/*
+!.vscode/settings.json
+.env
+.env.*
+!.env.example
+# client do Prisma e gerado por "npx prisma generate"
+/src/generated
+# arquivos enviados por upload (fotos dos objetos)
+/uploads
