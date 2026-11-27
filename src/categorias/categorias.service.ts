@@ -29,7 +29,8 @@ export class CategoriasService {
 
   async findOne(id: number) {
     const categoria = await this.prisma.categoria.findUnique({ where: { id } });
-    if (!categoria) throw new NotFoundException(`Categoria ${id} não encontrada`);
+    if (!categoria)
+      throw new NotFoundException(`Categoria ${id} não encontrada`);
     return categoria;
   }
 
@@ -47,7 +48,9 @@ export class CategoriasService {
 
   async remove(id: number) {
     await this.findOne(id);
-    const emUso = await this.prisma.objeto.count({ where: { categoriaId: id } });
+    const emUso = await this.prisma.objeto.count({
+      where: { categoriaId: id },
+    });
     if (emUso > 0) {
       throw new ConflictException(
         'Categoria possui objetos cadastrados e não pode ser excluída',

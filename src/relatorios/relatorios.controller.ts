@@ -4,13 +4,11 @@ import { Papel } from '../generated/prisma/client.js';
 import { ObjetosDetalhadosQueryDto } from './objetos-detalhados-query.dto.js';
 import { RelatoriosService } from './relatorios.service.js';
 
-// Relatorios sao restritos a equipe (contem dados pessoais).
 @Roles(Papel.RESPONSAVEL, Papel.ADMINISTRADOR)
 @Controller('relatorios')
 export class RelatoriosController {
   constructor(private relatorios: RelatoriosService) {}
 
-  // GET /relatorios/objetos-detalhados?status=ENCONTRADO
   @Get('objetos-detalhados')
   objetos(@Query() query: ObjetosDetalhadosQueryDto) {
     return this.relatorios.objetosDetalhados(query.status);

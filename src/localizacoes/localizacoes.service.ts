@@ -15,7 +15,6 @@ import { CreateLocalizacaoDto } from './dto/create-localizacao.dto.js';
 import { ListLocalizacoesQueryDto } from './dto/list-localizacoes-query.dto.js';
 import { UpdateLocalizacaoDto } from './dto/update-localizacao.dto.js';
 
-// Qual tipo o PAI precisa ter para cada tipo de localizacao (RF07).
 const TIPO_DO_PAI: Record<TipoLocalizacao, TipoLocalizacao | null> = {
   [TipoLocalizacao.CAMPUS]: null,
   [TipoLocalizacao.PREDIO]: TipoLocalizacao.CAMPUS,
@@ -49,8 +48,6 @@ export class LocalizacoesService {
     return lista.map((l) => ({ ...l, caminho: montarCaminho(l) }));
   }
 
-  // Arvore completa (campus -> predios -> andares -> salas) para montar os
-  // selects hierarquicos do formulario.
   async arvore() {
     const todas = await this.prisma.localizacao.findMany({
       orderBy: { nome: 'asc' },
@@ -82,12 +79,11 @@ export class LocalizacoesService {
   async update(id: number, dto: UpdateLocalizacaoDto) {
     const atual = await this.findOne(id);
     const tipo = dto.tipo ?? atual.tipo;
-    const paiId = dto.paiId !== undefined ? dto.paiId : (atual.paiId ?? undefined);
+    const paiId =
+      dto.paiId !== undefined ? dto.paiId : (atual.paiId ?? undefined);
 
-    // Se mudou tipo ou pai, a hierarquia precisa continuar valida.
     await this.validarHierarquia(tipo, paiId);
 
-    // Mudar o nivel de quem ja tem filhos quebraria a hierarquia deles.
     const mudouEstrutura =
       tipo !== atual.tipo || (paiId ?? null) !== atual.paiId;
     if (mudouEstrutura && atual.filhos.length > 0) {
@@ -123,8 +119,6 @@ export class LocalizacoesService {
     return this.prisma.localizacao.delete({ where: { id } });
   }
 
-  // Ids da localizacao informada + todas as descendentes. Usado na busca de
-  // objetos: filtrar por um predio traz tambem os objetos das salas dele.
   async idsComDescendentes(raizId: number): Promise<number[]> {
     const todas = await this.prisma.localizacao.findMany({
       select: { id: true, paiId: true },
@@ -138,7 +132,6 @@ export class LocalizacoesService {
     return ids;
   }
 
-  // REGRA DE NEGOCIO: respeita campus > predio > andar > sala.
   private async validarHierarquia(tipo: TipoLocalizacao, paiId?: number) {
     const tipoEsperado = TIPO_DO_PAI[tipo];
 

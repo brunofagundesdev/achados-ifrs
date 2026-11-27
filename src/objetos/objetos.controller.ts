@@ -34,7 +34,6 @@ import {
 export class ObjetosController {
   constructor(private readonly objetos: ObjetosService) {}
 
-  // RF03 - qualquer usuario autenticado
   @Post('perdidos')
   criarPerdido(
     @Body() dto: CreateObjetoPerdidoDto,
@@ -43,7 +42,6 @@ export class ObjetosController {
     return this.objetos.criarPerdido(dto, atual);
   }
 
-  // RF04 - somente responsavel ou administrador
   @Roles(Papel.RESPONSAVEL, Papel.ADMINISTRADOR)
   @Post('encontrados')
   criarEncontrado(
@@ -53,7 +51,6 @@ export class ObjetosController {
     return this.objetos.criarEncontrado(dto, atual);
   }
 
-  // RF06 - consulta e busca
   @Get()
   findAll(
     @Query() query: ListObjetosQueryDto,
@@ -62,7 +59,6 @@ export class ObjetosController {
     return this.objetos.findAll(query, atual);
   }
 
-  // Declarada ANTES de ":id" para "meus" nao ser lido como id.
   @Get('meus')
   meus(@UsuarioAtual() atual: UsuarioAutenticado) {
     return this.objetos.meus(atual);
@@ -76,7 +72,6 @@ export class ObjetosController {
     return this.objetos.findOne(id, atual);
   }
 
-  // RF08
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -94,7 +89,6 @@ export class ObjetosController {
     return this.objetos.remove(id, atual);
   }
 
-  // RF05 - fotografias
   @Post(':id/fotos')
   adicionarFoto(
     @Param('id', ParseIntPipe) id: number,
@@ -104,9 +98,6 @@ export class ObjetosController {
     return this.objetos.adicionarFoto(id, dto, atual);
   }
 
-  // RF05 - upload do arquivo (multipart/form-data, campo "fotos", ate 5 imagens
-  // de 5 MB). O arquivo fica em memoria ate as permissoes serem conferidas e so
-  // entao e gravado no disco do servidor.
   @Post(':id/fotos/upload')
   @UseInterceptors(
     FilesInterceptor('fotos', MAXIMO_FOTOS_POR_ENVIO, {

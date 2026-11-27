@@ -27,7 +27,6 @@ import {
 import { ListObjetosQueryDto } from './dto/list-objetos-query.dto.js';
 import { UpdateObjetoDto } from './dto/update-objeto.dto.js';
 
-// JOIN: objeto + categoria + localizacao (com ancestrais) + quem registrou + tags + fotos + retirada
 const INCLUDE_OBJETO = {
   categoria: true,
   localizacao: { include: INCLUDE_CAMINHO },
@@ -49,13 +48,10 @@ export class ObjetosService {
     private armazenamento: ArmazenamentoService,
   ) {}
 
-  // ---------------------------------------------------------------- cadastro
-  // RF03: qualquer usuario autenticado cadastra objeto PERDIDO.
   criarPerdido(dto: CreateObjetoPerdidoDto, atual: UsuarioAutenticado) {
     return this.criar(dto, StatusObjeto.PERDIDO, atual, dto.contato);
   }
 
-  // RF04: so RESPONSAVEL/ADMINISTRADOR (garantido no controller) cadastra ENCONTRADO.
   criarEncontrado(dto: CreateObjetoEncontradoDto, atual: UsuarioAutenticado) {
     return this.criar(dto, StatusObjeto.ENCONTRADO, atual);
   }
@@ -92,8 +88,6 @@ export class ObjetosService {
     return this.serializar(objeto, atual);
   }
 
-  // ---------------------------------------------------------------- consulta
-  // RF06: busca por tipo, categoria, descricao, localizacao, data, status e tag.
   async findAll(query: ListObjetosQueryDto, atual: UsuarioAutenticado) {
     const where: Prisma.ObjetoWhereInput = {};
 
@@ -118,7 +112,6 @@ export class ObjetosService {
       const periodo: { gte?: Date; lt?: Date } = {};
       if (query.dataInicio) periodo.gte = new Date(query.dataInicio);
       if (query.dataFim) {
-        // "ate AAAA-MM-DD" inclui o dia inteiro: usamos "antes do dia seguinte".
         const fim = new Date(query.dataFim);
         fim.setUTCDate(fim.getUTCDate() + 1);
         periodo.lt = fim;
@@ -134,7 +127,6 @@ export class ObjetosService {
     return objetos.map((o) => this.serializar(o, atual));
   }
 
-  // Objetos registrados pelo proprio usuario logado.
   async meus(atual: UsuarioAutenticado) {
     const objetos = await this.prisma.objeto.findMany({
       where: { registradoPorId: atual.sub },
@@ -148,9 +140,6 @@ export class ObjetosService {
     return this.serializar(await this.buscar(id), atual);
   }
 
-  // -------------------------------------------------------------- atualizacao
-  // RF08: a equipe atualiza dados e status; o dono pode corrigir os dados do
-  // proprio registro, mas nao o status.
   async update(id: number, dto: UpdateObjetoDto, atual: UsuarioAutenticado) {
     const objeto = await this.buscar(id);
     this.exigirEquipeOuDono(objeto, atual);
@@ -159,7 +148,7 @@ export class ObjetosService {
     if (dto.status !== undefined && !ehEquipe(atual)) {
       throw new ForbiddenException('Somente a equipe pode alterar o status');
     }
-    // REGRA: objeto PERDIDO sempre precisa de contato.
+
     const statusFinal = dto.status ?? objeto.status;
     const contatoFinal = dto.contato ?? objeto.contato;
     if (statusFinal === StatusObjeto.PERDIDO && !contatoFinal) {
@@ -183,7 +172,8 @@ export class ObjetosService {
       localizacaoId: dto.localizacaoId,
     };
     if (dto.data) data.dataOcorrencia = new Date(dto.data);
-    if (dto.tagIds) data.tags = { set: dto.tagIds.map((tagId) => ({ id: tagId })) };
+    if (dto.tagIds)
+      data.tags = { set: dto.tagIds.map((tagId) => ({ id: tagId })) };
 
     const atualizado = await this.prisma.objeto.update({
       where: { id },
@@ -196,26 +186,30 @@ export class ObjetosService {
   async remove(id: number, atual: UsuarioAutenticado) {
     const objeto = await this.buscar(id);
     this.exigirEquipeOuDono(objeto, atual);
-    this.exigirNaoDevolvido(objeto); // preserva o historico das retiradas
-    // As fotos sao apagadas junto (onDelete: Cascade) e os vinculos com tags tambem.
+    this.exigirNaoDevolvido(objeto);
+
     const removido = await this.prisma.objeto.delete({ where: { id } });
-    // Depois do banco, apaga do disco os arquivos enviados por upload.
+
     await this.armazenamento.removerArquivos(objeto.fotos.map((f) => f.url));
     return removido;
   }
 
-  // -------------------------------------------------------------------- fotos
-  // RF05: anexar fotografias ao registro (por URL da imagem).
-  async adicionarFoto(id: number, dto: CreateFotoDto, atual: UsuarioAutenticado) {
+  async adicionarFoto(
+    id: number,
+    dto: CreateFotoDto,
+    atual: UsuarioAutenticado,
+  ) {
     const objeto = await this.buscar(id);
     this.exigirEquipeOuDono(objeto, atual);
     this.exigirNaoDevolvido(objeto);
     return this.prisma.foto.create({ data: { url: dto.url, objetoId: id } });
   }
 
-  // RF05: upload do arquivo da foto; a imagem e gravada no servidor (pasta
-  // uploads/) e o registro guarda a URL relativa "/uploads/<arquivo>".
-  async enviarFotos(id: number, arquivos: ArquivoEnviado[], atual: UsuarioAutenticado) {
+  async enviarFotos(
+    id: number,
+    arquivos: ArquivoEnviado[],
+    atual: UsuarioAutenticado,
+  ) {
     const objeto = await this.buscar(id);
     this.exigirEquipeOuDono(objeto, atual);
     this.exigirNaoDevolvido(objeto);
@@ -223,10 +217,12 @@ export class ObjetosService {
     const urls = await this.armazenamento.salvarImagens(arquivos);
     try {
       return await this.prisma.$transaction(
-        urls.map((url) => this.prisma.foto.create({ data: { url, objetoId: id } })),
+        urls.map((url) =>
+          this.prisma.foto.create({ data: { url, objetoId: id } }),
+        ),
       );
     } catch (erro) {
-      await this.armazenamento.removerArquivos(urls); // banco falhou: limpa o disco
+      await this.armazenamento.removerArquivos(urls);
       throw erro;
     }
   }
@@ -239,13 +235,13 @@ export class ObjetosService {
     const foto = await this.prisma.foto.findFirst({
       where: { id: fotoId, objetoId: id },
     });
-    if (!foto) throw new NotFoundException(`Foto ${fotoId} não encontrada neste objeto`);
+    if (!foto)
+      throw new NotFoundException(`Foto ${fotoId} não encontrada neste objeto`);
     const removida = await this.prisma.foto.delete({ where: { id: fotoId } });
     await this.armazenamento.removerArquivos([foto.url]);
     return removida;
   }
 
-  // ---------------------------------------------------------------- auxiliares
   private async buscar(id: number): Promise<ObjetoCompleto> {
     const objeto = await this.prisma.objeto.findUnique({
       where: { id },
@@ -255,9 +251,6 @@ export class ObjetosService {
     return objeto;
   }
 
-  // RF10: fotos de objeto SENSIVEL ficam ocultas na consulta "publica", isto e,
-  // para o usuario comum. Equipe e o proprio dono do registro continuam vendo.
-  // Tambem escondemos os dados pessoais da retirada de quem nao e da equipe.
   private serializar(objeto: ObjetoCompleto, usuario: UsuarioAutenticado) {
     const equipe = ehEquipe(usuario);
     const dono = objeto.registradoPorId === usuario.sub;
@@ -294,7 +287,6 @@ export class ObjetosService {
     }
   }
 
-  // REGRA: a data do objeto nao pode estar no futuro.
   private validarData(iso: string) {
     const data = new Date(iso);
     if (Number.isNaN(data.getTime())) {
@@ -305,7 +297,6 @@ export class ObjetosService {
     }
   }
 
-  // Confere se categoria, localizacao e tags informadas existem (senao 400).
   private async validarReferencias(
     categoriaId?: number,
     localizacaoId?: number,
@@ -315,13 +306,15 @@ export class ObjetosService {
       const categoria = await this.prisma.categoria.findUnique({
         where: { id: categoriaId },
       });
-      if (!categoria) throw new BadRequestException('Categoria informada não existe');
+      if (!categoria)
+        throw new BadRequestException('Categoria informada não existe');
     }
     if (localizacaoId !== undefined) {
       const localizacao = await this.prisma.localizacao.findUnique({
         where: { id: localizacaoId },
       });
-      if (!localizacao) throw new BadRequestException('Localização informada não existe');
+      if (!localizacao)
+        throw new BadRequestException('Localização informada não existe');
     }
     if (tagIds?.length) {
       const ids = [...new Set(tagIds)];

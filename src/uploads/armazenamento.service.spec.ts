@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ArmazenamentoService } from './armazenamento.service.js';
 
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+const PNG = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3,
+]);
 const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 const arquivo = (buffer: Buffer, originalname = 'foto') => ({
   buffer,
@@ -40,19 +42,25 @@ describe('ArmazenamentoService - upload de fotos (RF05)', () => {
 
   it('recusa arquivo que não é imagem (400) e não grava nada', async () => {
     const texto = arquivo(Buffer.from('#!/bin/sh\necho oi'), 'script.png');
-    await expect(service.salvarImagens([arquivo(PNG), texto])).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.salvarImagens([arquivo(PNG), texto]),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('recusa envio sem arquivos (400)', async () => {
-    await expect(service.salvarImagens([])).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.salvarImagens([])).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('remove o arquivo do disco e ignora URLs externas / caminhos maliciosos', async () => {
     const [url] = await service.salvarImagens([arquivo(PNG)]);
     const caminho = join(pasta, url.replace('/uploads/', ''));
-    await service.removerArquivos([url, 'http://exemplo/foto.jpg', '/uploads/../../etc/passwd']);
+    await service.removerArquivos([
+      url,
+      'http://exemplo/foto.jpg',
+      '/uploads/../../etc/passwd',
+    ]);
     expect(existsSync(caminho)).toBe(false);
   });
 });

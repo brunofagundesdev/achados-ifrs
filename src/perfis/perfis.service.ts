@@ -29,7 +29,6 @@ export class PerfisService {
     });
     if (!usuario) throw new NotFoundException('Usuário informado não existe');
 
-    // REGRA 1:1 - nao permitir dois perfis para o mesmo usuario.
     const jaTem = await this.prisma.perfil.findUnique({
       where: { usuarioId: donoId },
     });
@@ -71,7 +70,7 @@ export class PerfisService {
   }
 
   async update(id: number, dto: UpdatePerfilDto, atual: UsuarioAutenticado) {
-    await this.findOne(id, atual); // 404 / 403
+    await this.findOne(id, atual);
     return this.prisma.perfil.update({
       where: { id },
       data: dto,

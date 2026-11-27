@@ -19,14 +19,12 @@ const COMPLETA = {
 export class RetiradasService {
   constructor(private prisma: PrismaService) {}
 
-  // RF09 / HU04: registra a retirada e marca o objeto como DEVOLVIDO.
   async create(dto: CreateRetiradaDto, responsavel: UsuarioAutenticado) {
     const objeto = await this.prisma.objeto.findUnique({
       where: { id: dto.objetoId },
     });
     if (!objeto) throw new NotFoundException('Objeto não encontrado');
 
-    // REGRA 1: so se retira objeto ENCONTRADO (que esta sob guarda do setor).
     if (objeto.status === StatusObjeto.DEVOLVIDO) {
       throw new ConflictException('Este objeto já foi devolvido');
     }
@@ -36,10 +34,13 @@ export class RetiradasService {
       );
     }
 
-    // REGRA 2: a retirada nao pode ser anterior a entrada do objeto, nem futura.
-    const dataRetirada = dto.dataRetirada ? new Date(dto.dataRetirada) : new Date();
+    const dataRetirada = dto.dataRetirada
+      ? new Date(dto.dataRetirada)
+      : new Date();
     if (dataRetirada.getTime() > Date.now()) {
-      throw new BadRequestException('A data da retirada não pode estar no futuro');
+      throw new BadRequestException(
+        'A data da retirada não pode estar no futuro',
+      );
     }
     if (dataRetirada.getTime() < objeto.dataOcorrencia.getTime()) {
       throw new BadRequestException(
@@ -47,7 +48,6 @@ export class RetiradasService {
       );
     }
 
-    // TRANSACAO: cria a retirada E muda o status, ou nenhuma das duas coisas.
     return this.prisma.$transaction(async (tx) => {
       const retirada = await tx.retirada.create({
         data: {
@@ -63,8 +63,11 @@ export class RetiradasService {
         where: { id: dto.objetoId },
         data: { status: StatusObjeto.DEVOLVIDO },
       });
-      // devolvemos o objeto ja com o status novo
-      return { ...retirada, objeto: { ...retirada.objeto, status: StatusObjeto.DEVOLVIDO } };
+
+      return {
+        ...retirada,
+        objeto: { ...retirada.objeto, status: StatusObjeto.DEVOLVIDO },
+      };
     });
   }
 
@@ -87,10 +90,14 @@ export class RetiradasService {
   async update(id: number, dto: UpdateRetiradaDto) {
     const atual = await this.findOne(id);
 
-    const dataRetirada = dto.dataRetirada ? new Date(dto.dataRetirada) : undefined;
+    const dataRetirada = dto.dataRetirada
+      ? new Date(dto.dataRetirada)
+      : undefined;
     if (dataRetirada) {
       if (dataRetirada.getTime() > Date.now()) {
-        throw new BadRequestException('A data da retirada não pode estar no futuro');
+        throw new BadRequestException(
+          'A data da retirada não pode estar no futuro',
+        );
       }
       if (dataRetirada.getTime() < atual.objeto.dataOcorrencia.getTime()) {
         throw new BadRequestException(
@@ -110,7 +117,6 @@ export class RetiradasService {
     });
   }
 
-  // Desfazer uma retirada registrada por engano: o objeto volta a ENCONTRADO.
   async remove(id: number) {
     const retirada = await this.findOne(id);
     return this.prisma.$transaction(async (tx) => {

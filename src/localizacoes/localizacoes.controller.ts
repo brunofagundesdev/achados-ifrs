@@ -31,7 +31,6 @@ export class LocalizacoesController {
     return this.localizacoes.findAll(query);
   }
 
-  // Declarada ANTES de ":id" para "arvore" nao ser lido como id.
   @Get('arvore')
   arvore() {
     return this.localizacoes.arvore();

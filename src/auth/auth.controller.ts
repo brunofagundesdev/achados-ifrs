@@ -22,7 +22,6 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
-  // Quem sou eu? (usado pelo frontend para saber o papel e montar o menu)
   @Get('me')
   me(@UsuarioAtual() usuario: UsuarioAutenticado) {
     return usuario;

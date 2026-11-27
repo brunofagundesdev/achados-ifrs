@@ -11,8 +11,6 @@ export class CreatePerfilDto {
   @MaxLength(30)
   matricula?: string;
 
-  // Opcional: so um ADMINISTRADOR pode criar perfil para outra pessoa.
-  // Sem este campo, o perfil e criado para o proprio usuario logado.
   @IsOptional()
   @IsInt()
   usuarioId?: number;

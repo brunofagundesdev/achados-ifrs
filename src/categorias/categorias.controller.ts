@@ -14,7 +14,6 @@ import { CategoriasService } from './categorias.service.js';
 import { CreateCategoriaDto } from './dto/create-categoria.dto.js';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
 
-// Leitura: qualquer usuario autenticado. Escrita: equipe do setor.
 @Controller('categorias')
 export class CategoriasController {
   constructor(private readonly categorias: CategoriasService) {}
@@ -37,7 +36,10 @@ export class CategoriasController {
 
   @Roles(Papel.RESPONSAVEL, Papel.ADMINISTRADOR)
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCategoriaDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCategoriaDto,
+  ) {
     return this.categorias.update(id, dto);
   }
 

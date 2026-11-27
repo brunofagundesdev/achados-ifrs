@@ -18,7 +18,7 @@ import { AuthService } from './auth.service.js';
     }),
   ],
   controllers: [AuthController],
-  // APP_GUARD registra o AuthGuard de forma GLOBAL: toda rota nova nasce protegida.
+
   providers: [AuthService, { provide: APP_GUARD, useClass: AuthGuard }],
 })
 export class AuthModule {}

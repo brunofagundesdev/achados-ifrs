@@ -14,11 +14,6 @@ import { IS_PUBLIC_KEY } from './public.decorator.js';
 import { ROLES_KEY } from './roles.decorator.js';
 import type { UsuarioAutenticado } from './usuario-autenticado.js';
 
-// Guard GLOBAL (registrado com APP_GUARD no AuthModule). Roda antes de toda rota:
-//   1) rota com @Public()  -> passa direto;
-//   2) valida o token JWT (header "Authorization: Bearer ...")  -> senao 401;
-//   3) confere no banco se o usuario ainda existe e qual o papel ATUAL dele;
-//   4) se a rota tem @Roles(...) e o papel nao esta na lista  -> 403.
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -50,8 +45,6 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Token inválido ou expirado');
     }
 
-    // O papel vem do banco (e nao do token) para que uma mudanca de papel
-    // ou a exclusao do usuario valham imediatamente.
     const usuario = await this.prisma.usuario.findUnique({
       where: { id },
       select: { id: true, email: true, papel: true },

@@ -11,10 +11,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-// Campos comuns aos dois cadastros (RF03 e RF04).
-// Objeto ENCONTRADO: "data" = data de entrada no setor.
 export class CreateObjetoEncontradoDto {
-  // O que e o objeto: "Garrafa termica", "Calculadora"...
   @IsString()
   @IsNotEmpty()
   @MaxLength(80)
@@ -28,14 +25,12 @@ export class CreateObjetoEncontradoDto {
   @IsInt()
   categoriaId: number;
 
-  // Pode ser qualquer nivel (campus, predio, andar ou sala).
   @IsInt()
   localizacaoId: number;
 
   @IsDateString()
   data: string;
 
-  // Objeto sensivel (documentos, cartoes...): fotos ocultas nas consultas publicas (RF10).
   @IsOptional()
   @IsBoolean()
   sensivel?: boolean;
@@ -52,8 +47,6 @@ export class CreateObjetoEncontradoDto {
   fotoUrls?: string[];
 }
 
-// Objeto PERDIDO: igual ao encontrado, mas o contato do dono e obrigatorio.
-// Objeto PERDIDO: "data" = data em que foi perdido.
 export class CreateObjetoPerdidoDto extends CreateObjetoEncontradoDto {
   @IsString()
   @IsNotEmpty()

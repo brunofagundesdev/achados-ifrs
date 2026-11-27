@@ -1,6 +1,3 @@
-// =============================================================================
-// CONSULTAS AVANCADAS (3+ tabelas em uma unica consulta)
-// =============================================================================
 import { Injectable } from '@nestjs/common';
 import {
   INCLUDE_CAMINHO,
@@ -14,9 +11,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class RelatoriosService {
   constructor(private prisma: PrismaService) {}
 
-  // Combina 7 TABELAS: objetos + categorias + localizacoes (e seus ancestrais)
-  // + usuarios (+ perfis) + tags + retiradas (+ usuario responsavel).
-  // O include aninhado do Prisma gera os JOINs por baixo dos panos.
   async objetosDetalhados(status?: StatusObjeto) {
     const objetos = await this.prisma.objeto.findMany({
       where: status ? { status } : undefined,
@@ -40,7 +34,6 @@ export class RelatoriosService {
     }));
   }
 
-  // Retiradas: retirada + objeto + categoria + localizacao + responsavel.
   async retiradasDetalhadas() {
     const retiradas = await this.prisma.retirada.findMany({
       include: {
@@ -61,9 +54,10 @@ export class RelatoriosService {
     }));
   }
 
-  // Dashboard com TOTAIS de varias tabelas (consultas em paralelo).
   async dashboard() {
-    const where = (status: StatusObjeto): Prisma.ObjetoWhereInput => ({ status });
+    const where = (status: StatusObjeto): Prisma.ObjetoWhereInput => ({
+      status,
+    });
 
     const [
       totalObjetos,
@@ -81,12 +75,12 @@ export class RelatoriosService {
       this.prisma.objeto.count({ where: where(StatusObjeto.DEVOLVIDO) }),
       this.prisma.usuario.count(),
       this.prisma.retirada.count(),
-      // categorias com a quantidade de objetos de cada uma
+
       this.prisma.categoria.findMany({
         select: { id: true, nome: true, _count: { select: { objetos: true } } },
         orderBy: { objetos: { _count: 'desc' } },
       }),
-      // as 5 localizacoes com mais objetos
+
       this.prisma.localizacao.findMany({
         where: { objetos: { some: {} } },
         select: {
@@ -105,11 +99,13 @@ export class RelatoriosService {
       porStatus: { perdidos, encontrados, devolvidos },
       totalUsuarios: usuarios,
       totalRetiradas: retiradas,
-      // % de objetos achados que ja voltaram para o dono
+
       taxaDevolucao:
         encontrados + devolvidos === 0
           ? 0
-          : Number(((devolvidos / (encontrados + devolvidos)) * 100).toFixed(1)),
+          : Number(
+              ((devolvidos / (encontrados + devolvidos)) * 100).toFixed(1),
+            ),
       porCategoria: porCategoria.map((c) => ({
         id: c.id,
         nome: c.nome,

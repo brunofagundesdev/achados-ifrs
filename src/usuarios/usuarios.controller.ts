@@ -15,7 +15,6 @@ import { AlterarPapelDto } from './dto/alterar-papel.dto.js';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto.js';
 import { UsuariosService } from './usuarios.service.js';
 
-// O cadastro (create) fica em POST /auth/register.
 @Controller('usuarios')
 export class UsuariosController {
   constructor(private readonly usuarios: UsuariosService) {}

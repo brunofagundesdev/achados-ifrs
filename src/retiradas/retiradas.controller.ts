@@ -16,7 +16,6 @@ import { CreateRetiradaDto } from './dto/create-retirada.dto.js';
 import { UpdateRetiradaDto } from './dto/update-retirada.dto.js';
 import { RetiradasService } from './retiradas.service.js';
 
-// Retiradas contem dados pessoais: todo o controller e restrito a equipe.
 @Roles(Papel.RESPONSAVEL, Papel.ADMINISTRADOR)
 @Controller('retiradas')
 export class RetiradasController {
@@ -41,7 +40,10 @@ export class RetiradasController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRetiradaDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRetiradaDto,
+  ) {
     return this.retiradas.update(id, dto);
   }
 

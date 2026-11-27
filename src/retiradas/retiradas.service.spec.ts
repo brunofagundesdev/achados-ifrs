@@ -7,7 +7,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { Papel, StatusObjeto } from '../generated/prisma/client.js';
 import { RetiradasService } from './retiradas.service.js';
 
-const responsavel = { sub: 7, email: 'resp@ifrs.edu.br', papel: Papel.RESPONSAVEL };
+const responsavel = {
+  sub: 7,
+  email: 'resp@ifrs.edu.br',
+  papel: Papel.RESPONSAVEL,
+};
 const entrada = new Date('2026-11-01T00:00:00Z');
 
 function criarServico(objeto: unknown) {
@@ -33,35 +37,62 @@ describe('RetiradasService.create', () => {
 
   it('404 quando o objeto não existe', async () => {
     const { service } = criarServico(null);
-    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('400 quando o objeto ainda está PERDIDO', async () => {
-    const { service } = criarServico({ status: StatusObjeto.PERDIDO, dataOcorrencia: entrada });
-    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(BadRequestException);
+    const { service } = criarServico({
+      status: StatusObjeto.PERDIDO,
+      dataOcorrencia: entrada,
+    });
+    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('409 quando o objeto já foi DEVOLVIDO', async () => {
-    const { service } = criarServico({ status: StatusObjeto.DEVOLVIDO, dataOcorrencia: entrada });
-    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(ConflictException);
+    const { service } = criarServico({
+      status: StatusObjeto.DEVOLVIDO,
+      dataOcorrencia: entrada,
+    });
+    await expect(service.create(dto, responsavel)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   it('400 quando a retirada é anterior à entrada do objeto', async () => {
-    const { service } = criarServico({ status: StatusObjeto.ENCONTRADO, dataOcorrencia: entrada });
+    const { service } = criarServico({
+      status: StatusObjeto.ENCONTRADO,
+      dataOcorrencia: entrada,
+    });
     await expect(
-      service.create({ ...dto, dataRetirada: '2026-10-01T00:00:00Z' }, responsavel),
+      service.create(
+        { ...dto, dataRetirada: '2026-10-01T00:00:00Z' },
+        responsavel,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('400 quando a data da retirada está no futuro', async () => {
-    const { service } = criarServico({ status: StatusObjeto.ENCONTRADO, dataOcorrencia: entrada });
+    const { service } = criarServico({
+      status: StatusObjeto.ENCONTRADO,
+      dataOcorrencia: entrada,
+    });
     await expect(
-      service.create({ ...dto, dataRetirada: '2999-01-01T00:00:00Z' }, responsavel),
+      service.create(
+        { ...dto, dataRetirada: '2999-01-01T00:00:00Z' },
+        responsavel,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('registra a retirada e muda o status do objeto para DEVOLVIDO', async () => {
-    const { service, prisma } = criarServico({ status: StatusObjeto.ENCONTRADO, dataOcorrencia: entrada });
+    const { service, prisma } = criarServico({
+      status: StatusObjeto.ENCONTRADO,
+      dataOcorrencia: entrada,
+    });
     const resultado = await service.create(dto, responsavel);
 
     expect(prisma.retirada.create).toHaveBeenCalledOnce();

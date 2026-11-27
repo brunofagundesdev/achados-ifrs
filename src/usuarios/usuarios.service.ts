@@ -14,7 +14,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AlterarPapelDto } from './dto/alterar-papel.dto.js';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto.js';
 
-// Campos devolvidos pela API: a SENHA nunca sai daqui.
 const CAMPOS_PUBLICOS = {
   id: true,
   nome: true,
@@ -44,7 +43,7 @@ export class UsuariosService {
   }
 
   async update(id: number, dto: UpdateUsuarioDto, atual: UsuarioAutenticado) {
-    await this.findOne(id, atual); // 403 / 404
+    await this.findOne(id, atual);
 
     const data = { ...dto };
     if (dto.senha) data.senha = await bcrypt.hash(dto.senha, 10);
@@ -63,12 +62,10 @@ export class UsuariosService {
     }
   }
 
-  // Somente ADMINISTRADOR (garantido no controller com @Roles).
   async alterarPapel(id: number, dto: AlterarPapelDto) {
     const usuario = await this.prisma.usuario.findUnique({ where: { id } });
     if (!usuario) throw new NotFoundException(`Usuário ${id} não encontrado`);
 
-    // REGRA: o sistema nunca pode ficar sem nenhum administrador.
     if (usuario.papel === Papel.ADMINISTRADOR && dto.papel !== usuario.papel) {
       const admins = await this.prisma.usuario.count({
         where: { papel: Papel.ADMINISTRADOR },
@@ -90,8 +87,6 @@ export class UsuariosService {
   async remove(id: number, atual: UsuarioAutenticado) {
     await this.findOne(id, atual);
 
-    // REGRA: nao apagar quem tem historico (objetos registrados ou retiradas
-    // entregues); o banco recusaria pela chave estrangeira, avisamos antes.
     const [objetos, retiradas] = await Promise.all([
       this.prisma.objeto.count({ where: { registradoPorId: id } }),
       this.prisma.retirada.count({ where: { responsavelId: id } }),
@@ -101,7 +96,7 @@ export class UsuariosService {
         'Usuário possui objetos ou retiradas registrados e não pode ser excluído',
       );
     }
-    // O perfil (se existir) e apagado junto: onDelete Cascade no schema.
+
     return this.prisma.usuario.delete({
       where: { id },
       select: CAMPOS_PUBLICOS,
@@ -110,7 +105,9 @@ export class UsuariosService {
 
   private exigirAdminOuDono(id: number, atual: UsuarioAutenticado) {
     if (!ehAdministrador(atual) && atual.sub !== id) {
-      throw new ForbiddenException('Você só pode acessar os seus próprios dados');
+      throw new ForbiddenException(
+        'Você só pode acessar os seus próprios dados',
+      );
     }
   }
 }

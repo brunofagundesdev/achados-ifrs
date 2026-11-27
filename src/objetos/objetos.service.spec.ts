@@ -56,9 +56,9 @@ describe('ObjetosService - fotos de objeto sensível (RF10)', () => {
 describe('ObjetosService - permissões de edição', () => {
   it('usuário comum não edita objeto de outra pessoa (403)', async () => {
     const service = criarServico(objetoSensivel());
-    await expect(service.update(1, { descricao: 'x' }, comum)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.update(1, { descricao: 'x' }, comum),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('usuário comum não altera o status nem do próprio objeto (403)', async () => {

@@ -8,8 +8,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateTagDto } from './dto/create-tag.dto.js';
 import { UpdateTagDto } from './dto/update-tag.dto.js';
 
-// Tags = caracteristicas livres dos objetos (cor, marca, "com capinha"...).
-// Relacao N:N com objetos: servem de filtro na busca (RF06).
 @Injectable()
 export class TagsService {
   constructor(private prisma: PrismaService) {}
@@ -47,7 +45,6 @@ export class TagsService {
     }
   }
 
-  // Apagar uma tag so remove o vinculo com os objetos (tabela intermediaria N:N).
   async remove(id: number) {
     await this.findOne(id);
     return this.prisma.tag.delete({ where: { id } });

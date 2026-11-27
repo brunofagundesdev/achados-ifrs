@@ -21,7 +21,10 @@ export class PerfisController {
   constructor(private readonly perfis: PerfisService) {}
 
   @Post()
-  create(@Body() dto: CreatePerfilDto, @UsuarioAtual() atual: UsuarioAutenticado) {
+  create(
+    @Body() dto: CreatePerfilDto,
+    @UsuarioAtual() atual: UsuarioAutenticado,
+  ) {
     return this.perfis.create(dto, atual);
   }
 
@@ -31,7 +34,6 @@ export class PerfisController {
     return this.perfis.findAll();
   }
 
-  // Declarada ANTES de ":id" para "me" nao ser lido como id.
   @Get('me')
   findMe(@UsuarioAtual() atual: UsuarioAutenticado) {
     return this.perfis.findMe(atual);
